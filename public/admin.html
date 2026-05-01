@@ -250,8 +250,10 @@
         document.getElementById('admin-screen').style.display = 'flex';
         document.getElementById('logout-btn').style.display = '';
         loadLicenses();
-      } catch {
-        document.getElementById('login-error').style.display = '';
+      } catch (e) {
+        const errEl = document.getElementById('login-error');
+        errEl.textContent = e.message === 'No autorizado' ? 'Contraseña incorrecta.' : 'Error: ' + e.message;
+        errEl.style.display = '';
         adminPassword = '';
       }
     });
