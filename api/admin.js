@@ -16,7 +16,12 @@ export default async function handler(req, res) {
     }
 
     if (providedPassword !== adminPassword) {
-      return res.status(401).json({ error: 'No autorizado', debug: `Longitud esperada: ${adminPassword.length}` });
+      const first = adminPassword[0];
+      const last = adminPassword[adminPassword.length - 1];
+      return res.status(401).json({ 
+        error: 'No autorizado', 
+        debug: `Longitud: ${adminPassword.length}, Empieza por: "${first}", Termina en: "${last}"` 
+      });
     }
 
   const { createClient } = await import('@supabase/supabase-js');
