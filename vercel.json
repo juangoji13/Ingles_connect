@@ -1,11 +1,12 @@
 {
   "version": 2,
-  "routes": [
-    { "src": "/api/admin", "dest": "/api/admin.js" },
-    { "src": "/api/resolve", "dest": "/api/resolve.js" },
-    { "src": "/admin", "dest": "/public/admin.html" },
-    { "src": "/css/(.*)", "dest": "/public/css/$1" },
-    { "src": "/js/(.*)", "dest": "/public/js/$1" },
-    { "src": "/(.*)", "dest": "/public/index.html" }
+  "rewrites": [
+    { "source": "/api/admin", "destination": "/api/admin.js" },
+    { "source": "/api/resolve", "destination": "/api/resolve.js" },
+    { "source": "/admin", "destination": "/public/admin.html" },
+    { "source": "/css/(.*)", "destination": "/public/css/$1" },
+    { "source": "/js/(.*)", "destination": "/public/js/$1" },
+    { "source": "/((?!api/).*)", "destination": "/public/$1" },
+    { "source": "/", "destination": "/public/index.html" }
   ]
 }
