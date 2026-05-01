@@ -11,8 +11,12 @@ export default async function handler(req, res) {
     const adminPassword = process.env.ADMIN_PASSWORD ? process.env.ADMIN_PASSWORD.trim() : null;
     const providedPassword = req.headers['x-admin-password'] ? req.headers['x-admin-password'].trim() : '';
 
-    if (!adminPassword || providedPassword !== adminPassword) {
-      return res.status(401).json({ error: 'No autorizado' });
+    if (!adminPassword) {
+      return res.status(500).json({ error: 'Configuración incompleta: ADMIN_PASSWORD no está definida en Vercel.' });
+    }
+
+    if (providedPassword !== adminPassword) {
+      return res.status(401).json({ error: 'No autorizado', debug: `Longitud esperada: ${adminPassword.length}` });
     }
 
   const { createClient } = await import('@supabase/supabase-js');
