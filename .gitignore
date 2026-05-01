@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Environment variables - NEVER commit these
+.env
+.env.local
+.env.production
+
+# Vercel
+.vercel
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Legacy files (replaced by public/)
+connect-cleaner.html
+revisar.py

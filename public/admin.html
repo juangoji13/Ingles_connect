@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Panel Admin — Connect Cleaner</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0 }
+    :root { --bg: #0f0f0e; --surface: #181816; --s2: #212120; --border: rgba(255,255,255,.07); --text: #d6d5d2; --mu: #7a7977; --pr: #3d9ea8; --ph: #2d8a94; --pb: rgba(61,158,168,.12); --red: #e57373; --redbg: rgba(229,115,115,.1); --green: #6daa45; --greenbg: rgba(109,170,69,.12) }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100dvh; display: flex; flex-direction: column; }
+    header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 24px; height: 56px; display: flex; align-items: center; gap: 12px; }
+    .logo { font-weight: 700; font-size: 15px; color: var(--pr); }
+    .logo span { color: var(--text); font-weight: 400; font-size: 12px; opacity: .6; margin-left: 8px; }
+    #login-screen, #admin-screen { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px; }
+    #admin-screen { display: none; flex-direction: column; align-items: stretch; padding: 28px; gap: 24px; max-width: 1100px; margin: 0 auto; width: 100%; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .card-header { padding: 14px 18px; border-bottom: 1px solid var(--border); font-size: 12px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--mu); display: flex; align-items: center; justify-content: space-between; }
+    .card-body { padding: 18px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 10px; align-items: end; }
+    label { display: block; font-size: 11px; font-weight: 600; color: var(--mu); margin-bottom: 5px; text-transform: uppercase; letter-spacing: .05em; }
+    input[type=text], input[type=number], input[type=password] { width: 100%; background: var(--bg); border: 1.5px solid var(--border); border-radius: 6px; padding: 8px 10px; font-size: 13px; color: var(--text); font-family: inherit; outline: none; transition: border-color 120ms; }
+    input:focus { border-color: var(--pr); }
+    .btn { padding: 8px 16px; border-radius: 7px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; font-family: inherit; transition: all 120ms; }
+    .btn-primary { background: var(--pr); color: #fff; }
+    .btn-primary:hover { background: var(--ph); }
+    .btn-danger { background: var(--redbg); color: var(--red); border: 1px solid var(--red); }
+    .btn-danger:hover { background: var(--red); color: #fff; }
+    .btn-sm { padding: 4px 10px; font-size: 11px; }
+    /* Quick Templates */
+    .templates { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+    .tpl { background: var(--pb); color: var(--pr); border: 1px solid var(--pr); border-radius: 6px; padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 120ms; }
+    .tpl:hover { background: var(--pr); color: #fff; }
+    /* Table */
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--mu); padding: 8px 10px; border-bottom: 1px solid var(--border); }
+    td { padding: 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,.02); }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; }
+    .badge-ok { background: var(--greenbg); color: var(--green); }
+    .badge-warn { background: rgba(255,180,0,.1); color: #f5a623; }
+    .badge-exp { background: var(--redbg); color: var(--red); }
+    .progress-wrap { width: 100%; background: var(--bg); border-radius: 20px; height: 6px; min-width: 80px; }
+    .progress-bar { height: 6px; border-radius: 20px; background: var(--pr); transition: width .3s; }
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 8px; }
+    .stat-card { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
+    .stat-val { font-size: 28px; font-weight: 700; color: var(--pr); }
+    .stat-lbl { font-size: 11px; color: var(--mu); margin-top: 2px; }
+    .toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%) translateY(5px); background: var(--text); color: var(--bg); padding: 7px 15px; border-radius: 6px; font-size: 12px; font-weight: 600; opacity: 0; transition: opacity 160ms, transform 160ms; pointer-events: none; z-index: 200; }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .key-cell { font-family: monospace; font-size: 12px; color: var(--pr); }
+    #login-box { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 32px; width: 100%; max-width: 360px; text-align: center; }
+    #login-box h2 { font-size: 18px; margin-bottom: 6px; }
+    #login-box p { font-size: 12px; color: var(--mu); margin-bottom: 20px; }
+    #login-box input { margin-bottom: 12px; }
+    #login-box .btn { width: 100%; }
+    .filter-row { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
+    .filter-row input { max-width: 280px; }
+    .empty-state { text-align: center; padding: 40px; color: var(--mu); font-size: 13px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">Connect Cleaner <span>Panel de Administración</span></div>
+    <button class="btn btn-danger btn-sm" id="logout-btn" style="margin-left:auto;display:none;">Cerrar sesión</button>
+  </header>
+
+  <!-- Pantalla de Login -->
+  <div id="login-screen">
+    <div id="login-box">
+      <h2>Acceso Restringido</h2>
+      <p>Ingresa tu contraseña de administrador para continuar.</p>
+      <label for="admin-pass">Contraseña</label>
+      <input type="password" id="admin-pass" placeholder="Contraseña de administrador">
+      <button class="btn btn-primary" id="login-btn">Entrar</button>
+      <p id="login-error" style="color:var(--red);font-size:11px;margin-top:10px;display:none;">Contraseña incorrecta.</p>
+    </div>
+  </div>
+
+  <!-- Pantalla de Admin -->
+  <div id="admin-screen">
+    <!-- Estadísticas -->
+    <div class="stat-grid" id="stats-grid">
+      <div class="stat-card"><div class="stat-val" id="stat-total">—</div><div class="stat-lbl">Licencias totales</div></div>
+      <div class="stat-card"><div class="stat-val" id="stat-active">—</div><div class="stat-lbl">Licencias activas</div></div>
+      <div class="stat-card"><div class="stat-val" id="stat-used">—</div><div class="stat-lbl">Preguntas procesadas</div></div>
+      <div class="stat-card"><div class="stat-val" id="stat-expired">—</div><div class="stat-lbl">Licencias expiradas</div></div>
+    </div>
+
+    <!-- Crear Licencia -->
+    <div class="card">
+      <div class="card-header">
+        <span>Nueva Licencia</span>
+      </div>
+      <div class="card-body">
+        <p style="font-size:12px;color:var(--mu);margin-bottom:12px;">Plantillas rápidas:</p>
+        <div class="templates">
+          <button class="tpl" data-limit="50" data-days="7">Básico · 50 preguntas · 7 días</button>
+          <button class="tpl" data-limit="200" data-days="30">Estándar · 200 preguntas · 30 días</button>
+          <button class="tpl" data-limit="1000" data-days="90">Pro · 1000 preguntas · 90 días</button>
+          <button class="tpl" data-limit="9999" data-days="">Ilimitado · Sin expiración</button>
+        </div>
+        <div class="form-row">
+          <div>
+            <label>Clave de Licencia</label>
+            <input type="text" id="new-key" placeholder="Ej: CLIENTE-JUAN-001">
+          </div>
+          <div>
+            <label>Máx. Preguntas</label>
+            <input type="number" id="new-limit" placeholder="100" min="1">
+          </div>
+          <div>
+            <label>Días de acceso (vacío = sin límite)</label>
+            <input type="number" id="new-days" placeholder="30" min="1">
+          </div>
+          <div>
+            <button class="btn btn-primary" id="create-btn">Crear</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla de Licencias -->
+    <div class="card">
+      <div class="card-header">
+        <span>Licencias Activas</span>
+        <button class="btn btn-primary btn-sm" id="refresh-btn">Actualizar</button>
+      </div>
+      <div class="card-body" style="padding:0;">
+        <div style="padding:12px 18px;border-bottom:1px solid var(--border);">
+          <div class="filter-row">
+            <input type="text" id="filter-input" placeholder="Filtrar por clave...">
+          </div>
+        </div>
+        <div id="table-wrap" style="overflow-x:auto;">
+          <div class="empty-state">Cargando licencias...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    let adminPassword = '';
+    let allLicenses = [];
+
+    function toast(m, err) {
+      const el = document.getElementById('toast');
+      el.textContent = m;
+      el.style.background = err ? 'var(--red)' : 'var(--text)';
+      el.style.color = err ? '#fff' : 'var(--bg)';
+      el.classList.add('show');
+      clearTimeout(el._t);
+      el._t = setTimeout(() => el.classList.remove('show'), 2600);
+    }
+
+    async function apiFetch(method, body) {
+      const res = await fetch('/api/admin', {
+        method,
+        headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPassword },
+        body: body ? JSON.stringify(body) : undefined
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error');
+      return data;
+    }
+
+    function getStatus(lic) {
+      if (lic.expires_at && new Date(lic.expires_at) < new Date()) return 'expired';
+      if (lic.used_questions >= lic.limit_questions) return 'exhausted';
+      return 'active';
+    }
+
+    function renderTable(licenses) {
+      const wrap = document.getElementById('table-wrap');
+      if (!licenses.length) { wrap.innerHTML = '<div class="empty-state">No hay licencias.</div>'; return; }
+
+      const now = new Date();
+      let html = '<table><thead><tr><th>Clave</th><th>Estado</th><th>Uso</th><th>Progreso</th><th>Expira</th><th>Creada</th><th></th></tr></thead><tbody>';
+      licenses.forEach(l => {
+        const status = getStatus(l);
+        const pct = Math.min(100, Math.round((l.used_questions / l.limit_questions) * 100));
+        const barColor = pct >= 90 ? 'var(--red)' : pct >= 60 ? '#f5a623' : 'var(--pr)';
+        const statusBadge = status === 'active'
+          ? '<span class="badge badge-ok">Activa</span>'
+          : status === 'expired'
+            ? '<span class="badge badge-exp">Expirada</span>'
+            : '<span class="badge badge-warn">Agotada</span>';
+        const exp = l.expires_at ? new Date(l.expires_at).toLocaleDateString('es') : '∞';
+        const created = new Date(l.created_at).toLocaleDateString('es');
+        html += `<tr>
+          <td class="key-cell">${l.key}</td>
+          <td>${statusBadge}</td>
+          <td>${l.used_questions} / ${l.limit_questions}</td>
+          <td><div class="progress-wrap"><div class="progress-bar" style="width:${pct}%;background:${barColor};"></div></div></td>
+          <td>${exp}</td>
+          <td>${created}</td>
+          <td><button class="btn btn-danger btn-sm" onclick="deleteLicense('${l.key}')">Eliminar</button></td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      wrap.innerHTML = html;
+    }
+
+    function updateStats(licenses) {
+      const now = new Date();
+      const total = licenses.length;
+      const active = licenses.filter(l => getStatus(l) === 'active').length;
+      const used = licenses.reduce((s, l) => s + l.used_questions, 0);
+      const expired = licenses.filter(l => l.expires_at && new Date(l.expires_at) < now).length;
+      document.getElementById('stat-total').textContent = total;
+      document.getElementById('stat-active').textContent = active;
+      document.getElementById('stat-used').textContent = used.toLocaleString();
+      document.getElementById('stat-expired').textContent = expired;
+    }
+
+    async function loadLicenses() {
+      try {
+        const data = await apiFetch('GET');
+        allLicenses = data.licenses;
+        updateStats(allLicenses);
+        filterAndRender();
+      } catch (e) { toast('Error cargando licencias: ' + e.message, true); }
+    }
+
+    function filterAndRender() {
+      const q = document.getElementById('filter-input').value.toLowerCase();
+      const filtered = q ? allLicenses.filter(l => l.key.toLowerCase().includes(q)) : allLicenses;
+      renderTable(filtered);
+    }
+
+    window.deleteLicense = async function(key) {
+      if (!confirm('¿Eliminar la licencia "' + key + '"?')) return;
+      try {
+        await apiFetch('DELETE', { key });
+        toast('Licencia eliminada');
+        loadLicenses();
+      } catch (e) { toast(e.message, true); }
+    };
+
+    document.getElementById('login-btn').addEventListener('click', async () => {
+      const pass = document.getElementById('admin-pass').value.trim();
+      if (!pass) return;
+      adminPassword = pass;
+      try {
+        await apiFetch('GET');
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('admin-screen').style.display = 'flex';
+        document.getElementById('logout-btn').style.display = '';
+        loadLicenses();
+      } catch {
+        document.getElementById('login-error').style.display = '';
+        adminPassword = '';
+      }
+    });
+
+    document.getElementById('admin-pass').addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('login-btn').click();
+    });
+
+    document.getElementById('logout-btn').addEventListener('click', () => {
+      adminPassword = '';
+      document.getElementById('login-screen').style.display = '';
+      document.getElementById('admin-screen').style.display = 'none';
+      document.getElementById('logout-btn').style.display = 'none';
+      document.getElementById('admin-pass').value = '';
+    });
+
+    document.getElementById('create-btn').addEventListener('click', async () => {
+      const key = document.getElementById('new-key').value.trim();
+      const limit = document.getElementById('new-limit').value;
+      const days = document.getElementById('new-days').value;
+      if (!key || !limit) return toast('Clave y límite son requeridos', true);
+      try {
+        await apiFetch('POST', { key, limit_questions: parseInt(limit), days: days ? parseInt(days) : null });
+        toast('Licencia "' + key + '" creada');
+        document.getElementById('new-key').value = '';
+        document.getElementById('new-limit').value = '';
+        document.getElementById('new-days').value = '';
+        loadLicenses();
+      } catch (e) { toast(e.message, true); }
+    });
+
+    document.querySelectorAll('.tpl').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.getElementById('new-limit').value = btn.dataset.limit;
+        document.getElementById('new-days').value = btn.dataset.days;
+        const label = btn.textContent.split('·')[0].trim().toLowerCase();
+        const ts = Date.now().toString(36).toUpperCase();
+        document.getElementById('new-key').value = 'LIC-' + label.toUpperCase() + '-' + ts;
+      });
+    });
+
+    document.getElementById('refresh-btn').addEventListener('click', loadLicenses);
+    document.getElementById('filter-input').addEventListener('input', filterAndRender);
+  </script>
+</body>
+</html>

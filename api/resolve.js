@@ -1,0 +1,101 @@
+import { createClient } from '@supabase/supabase-js';
+
+// Inicializar cliente Supabase usando variables de entorno
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_KEY;
+const geminiApiKey = process.env.GEMINI_API_KEY;
+
+// Asegurarse de que las variables estén configuradas
+if (!supabaseUrl || !supabaseKey || !geminiApiKey) {
+    console.error("Faltan variables de entorno");
+}
+
+const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
+
+export default async function handler(req, res) {
+    // Solo permitir peticiones POST
+    if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Method not allowed' });
+    }
+
+    const { licenseKey, prompt, imagesBase64 } = req.body;
+
+    if (!licenseKey) {
+        return res.status(400).json({ error: 'Licencia requerida' });
+    }
+
+    if (!supabase) {
+        return res.status(500).json({ error: 'El servidor no tiene configurada la base de datos' });
+    }
+
+    try {
+        // 1. Validar la licencia en Supabase
+        const { data: license, error: dbError } = await supabase
+            .from('licenses')
+            .select('*')
+            .eq('key', licenseKey)
+            .single();
+
+        if (dbError || !license) {
+            return res.status(403).json({ error: 'Licencia inválida o no encontrada' });
+        }
+
+        if (license.used_questions >= license.limit_questions) {
+            return res.status(403).json({ error: 'Has alcanzado el límite de preguntas de tu licencia' });
+        }
+
+        // 2. Preparar el payload para Gemini 2.5 Flash
+        const sys = "Eres un asistente experto en resolver tareas. Lee la pregunta y proporciona ÚNICAMENTE la respuesta correcta. No expliques nada. Si es llenar espacios, devuelve las palabras separadas por guión o coma. Si es opción múltiple, devuelve la opción correcta.";
+        
+        let parts = [{ text: prompt }];
+        
+        if (imagesBase64 && imagesBase64.length) {
+            imagesBase64.forEach(b64 => {
+                const mime = b64.substring(b64.indexOf(':') + 1, b64.indexOf(';'));
+                const base64Data = b64.substring(b64.indexOf(',') + 1);
+                parts.push({
+                    inline_data: { mime_type: mime, data: base64Data }
+                });
+            });
+        }
+
+        const geminiBody = {
+            contents: [{ parts: parts }],
+            systemInstruction: { parts: [{ text: sys }] },
+            generationConfig: { temperature: 0.1 }
+        };
+
+        // 3. Llamar a la API de Gemini
+        const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(geminiBody)
+        });
+
+        if (!geminiRes.ok) {
+            const errTxt = await geminiRes.text();
+            console.error("Gemini Error:", errTxt);
+            return res.status(500).json({ error: 'Error procesando la IA. Intenta de nuevo más tarde.' });
+        }
+
+        const data = await geminiRes.json();
+        if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+            return res.status(500).json({ error: 'Respuesta inválida de la IA' });
+        }
+
+        const answer = data.candidates[0].content.parts[0].text.trim();
+
+        // 4. Actualizar el contador en Supabase
+        await supabase
+            .from('licenses')
+            .update({ used_questions: license.used_questions + 1 })
+            .eq('key', licenseKey);
+
+        // 5. Devolver la respuesta al cliente
+        return res.status(200).json({ answer: answer });
+
+    } catch (error) {
+        console.error("Internal Server Error:", error);
+        return res.status(500).json({ error: 'Error interno del servidor' });
+    }
+}

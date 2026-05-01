@@ -1,0 +1,9 @@
+{
+  "name": "connect-cleaner-saas",
+  "version": "1.0.0",
+  "description": "Backend for Connect Cleaner",
+  "type": "module",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.3"
+  }
+}
