@@ -97,10 +97,12 @@ window.resolveSingle = async function(idx) {
     if (inp) inp.value = ans;
     btn.style.display = 'none';
     toast('Pregunta ' + (idx + 1) + ' completada');
+    return true; // Éxito
   } catch (e) {
     toast('Error: ' + e.message, true);
     btn.innerHTML = oldTxt;
     btn.disabled = false;
+    return false; // Error
   }
 };
 
@@ -113,7 +115,10 @@ document.getElementById('resolve-all-btn').addEventListener('click', async funct
   btn.disabled = true;
   let solved = 0;
   for (let i = 0; i < questions.length; i++) {
-    if (!questions[i].answer) { await window.resolveSingle(i); solved++; }
+    if (!questions[i].answer) { 
+      const ok = await window.resolveSingle(i); 
+      if (ok) solved++; 
+    }
   }
   btn.innerHTML = oldTxt;
   btn.disabled = false;
