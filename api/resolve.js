@@ -66,7 +66,7 @@ export default async function handler(req, res) {
         };
 
         // 3. Llamar a la API de Gemini con mecanismo de fallback
-        let model = 'gemini-2.0-flash';
+        let model = 'gemini-2.5-flash';
         let geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -75,8 +75,8 @@ export default async function handler(req, res) {
 
         // Si el modelo principal falla por alta demanda (503) o límite de cuota (429), intentar con la versión Lite
         if (!geminiRes.ok && (geminiRes.status === 503 || geminiRes.status === 429)) {
-            console.log(`Modelo ${model} no disponible (${geminiRes.status}). Intentando con gemini-2.0-flash-lite...`);
-            model = 'gemini-2.0-flash-lite';
+            console.log(`Modelo ${model} no disponible (${geminiRes.status}). Intentando con gemini-2.5-flash-lite...`);
+            model = 'gemini-2.5-flash-lite';
             geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
