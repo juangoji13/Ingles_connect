@@ -66,7 +66,7 @@ export default async function handler(req, res) {
         };
 
         // 3. Llamar a la API de Gemini
-        const model = 'gemini-2.0-flash';
+        const model = 'gemini-2.5-flash';
         const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
