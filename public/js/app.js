@@ -51,13 +51,15 @@ export function parseHTML(raw) {
   });
 
   const opts = [];
-  container.querySelectorAll('input[type="radio"]').forEach(r => {
+  doc.querySelectorAll('input[type="radio"]').forEach(r => {
     const lbl = r.closest('label') || r.nextElementSibling;
     if (lbl) { const v = lbl.textContent.trim(); if (v && opts.indexOf(v) === -1) opts.push(v); }
   });
   if (!opts.length) {
-    container.querySelectorAll('.answers-wrap label, .answers-wrap li, .answer--matching__option').forEach(l => {
-      const t = l.textContent.trim();
+    doc.querySelectorAll('.answer--matching__option, .answers-wrap label, .answers-wrap li:not(.answer--matching-wrap)').forEach(l => {
+      const clone = l.cloneNode(true);
+      clone.querySelectorAll('select, .visually-hidden, .t-hidden, .sr-only').forEach(e => e.remove());
+      const t = clone.textContent.replace(/\s+/g, ' ').trim();
       if (t && t.length < 300 && !/Fill in the blank/i.test(t) && opts.indexOf(t) === -1) opts.push(t);
     });
   }
