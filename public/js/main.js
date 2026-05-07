@@ -72,10 +72,22 @@ document.addEventListener('paste', e => {
 function buildPrompt(idx) {
   const q = questions[idx];
   let prompt = 'Resuelve esta pregunta:\n\n';
+  
+  const isMatching = q.words.length > 0 && q.opts.length > 0;
+
   if (q.words.length) prompt += 'Bancos de palabras disponibles: ' + q.words.join(', ') + '\n\n';
   if (q.instr) prompt += 'Instrucción: ' + q.instr + '\n';
   prompt += 'Pregunta: ' + q.qText + '\n';
-  if (q.opts.length) prompt += '\nOpciones:\n' + q.opts.map((o, i) => String.fromCharCode(65 + i) + '. ' + o).join('\n') + '\n';
+  
+  if (q.opts.length) {
+    if (isMatching) {
+      prompt += '\nDefiniciones para emparejar:\n' + q.opts.map((o, i) => String.fromCharCode(65 + i) + '. ' + o).join('\n') + '\n';
+      prompt += '\nImportante: Esto es un ejercicio de emparejamiento. NO devuelvas solo una letra. Devuelve CADA letra emparejada con su palabra correspondiente del banco de palabras (ej. A - palabra1, B - palabra2).\n';
+    } else {
+      prompt += '\nOpciones:\n' + q.opts.map((o, i) => String.fromCharCode(65 + i) + '. ' + o).join('\n') + '\n';
+      prompt += '\nImportante: Devuelve el texto completo de la opción correcta, no solo la letra.\n';
+    }
+  }
   return prompt;
 }
 
