@@ -66,7 +66,8 @@ export default async function handler(req, res) {
         };
 
         // 3. Llamar a la API de Gemini
-        const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`, {
+        const model = 'gemini-1.5-flash';
+        const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(geminiBody)
@@ -74,28 +75,42 @@ export default async function handler(req, res) {
 
         if (!geminiRes.ok) {
             const errTxt = await geminiRes.text();
-            console.error("Gemini Error:", errTxt);
-            return res.status(500).json({ error: 'Error procesando la IA. Intenta de nuevo más tarde.' });
+            console.error(`Gemini Error (${geminiRes.status}):`, errTxt);
+            
+            // Proporcionar un mensaje más específico si es posible
+            let errorMsg = 'Error procesando la IA. Intenta de nuevo más tarde.';
+            if (geminiRes.status === 400 && errTxt.includes('API key not valid')) {
+                errorMsg = 'La clave API de Gemini configurada en el servidor no es válida.';
+            } else if (geminiRes.status === 404) {
+                errorMsg = `El modelo ${model} no fue encontrado o la URL es incorrecta.`;
+            }
+            
+            return res.status(500).json({ error: errorMsg });
         }
 
         const data = await geminiRes.json();
         if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+            console.error("Respuesta inválida de Gemini:", JSON.stringify(data));
             return res.status(500).json({ error: 'Respuesta inválida de la IA' });
         }
 
         const answer = data.candidates[0].content.parts[0].text.trim();
 
         // 4. Actualizar el contador en Supabase
-        await supabase
+        const { error: updateError } = await supabase
             .from('licenses')
             .update({ used_questions: license.used_questions + 1 })
             .eq('key', licenseKey);
+            
+        if (updateError) {
+            console.error("Error actualizando contador de licencia:", updateError);
+        }
 
         // 5. Devolver la respuesta al cliente
         return res.status(200).json({ answer: answer });
 
     } catch (error) {
         console.error("Internal Server Error:", error);
-        return res.status(500).json({ error: 'Error interno del servidor' });
+        return res.status(500).json({ error: 'Error interno del servidor: ' + error.message });
     }
 }
