@@ -31,12 +31,12 @@ export function parseHTML(raw) {
   if (ptEl) pts = (ptEl.childNodes[0] && ptEl.childNodes[0].textContent || '').trim();
 
   const words = [];
-  doc.querySelectorAll('.note__main').forEach(reqEl => {
-    reqEl.querySelectorAll('td').forEach(c => {
+  doc.querySelectorAll('.note__main, .question--matching__choices').forEach(reqEl => {
+    reqEl.querySelectorAll('td, .question--matching__choice').forEach(c => {
       const w = c.textContent.trim();
       if (w && words.indexOf(w) === -1) words.push(w);
     });
-    if (!reqEl.querySelector('table')) {
+    if (!reqEl.querySelector('table') && !reqEl.classList.contains('question--matching__choices')) {
       let tx = reqEl.textContent.trim()
         .replace(/Enter a number to rank.*?sentence\./i, '')
         .replace(/Type.*?noun\./i, '')
