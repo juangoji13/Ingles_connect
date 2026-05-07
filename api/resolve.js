@@ -67,7 +67,7 @@ export default async function handler(req, res) {
 
         // 3. Llamar a la API de Gemini
         const model = 'gemini-2.0-flash';
-        const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${geminiApiKey}`, {
+        const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(geminiBody)
@@ -77,12 +77,12 @@ export default async function handler(req, res) {
             const errTxt = await geminiRes.text();
             console.error(`Gemini Error (${geminiRes.status}):`, errTxt);
             
-            // Proporcionar un mensaje más específico si es posible
-            let errorMsg = 'Error procesando la IA. Intenta de nuevo más tarde.';
+            // Pasar el error exacto al frontend para que el usuario pueda verlo
+            let errorMsg = `Error Gemini (${geminiRes.status}): ${errTxt}`;
             if (geminiRes.status === 400 && errTxt.includes('API key not valid')) {
                 errorMsg = 'La clave API de Gemini configurada en el servidor no es válida.';
             } else if (geminiRes.status === 404) {
-                errorMsg = `El modelo ${model} no fue encontrado o la URL es incorrecta.`;
+                errorMsg = `El modelo ${model} no fue encontrado o la URL es incorrecta en v1beta.`;
             }
             
             return res.status(500).json({ error: errorMsg });
