@@ -82,7 +82,7 @@ function buildPrompt(idx) {
   if (q.opts.length) {
     if (isMatching) {
       prompt += '\nDefiniciones para emparejar:\n' + q.opts.map((o, i) => String.fromCharCode(65 + i) + '. ' + o).join('\n') + '\n';
-      prompt += '\nImportante: Esto es un ejercicio de emparejamiento. NO devuelvas solo una letra. Devuelve CADA letra emparejada con su palabra correspondiente del banco de palabras (ej. A - palabra1, B - palabra2).\n';
+      prompt += '\nImportante: Esto es un ejercicio de emparejamiento. NO devuelvas letras solas ni "Letra - palabra". Devuelve el texto COMPLETO de cada definición emparejado con su palabra correcta del banco (ej. "Texto de la definición -> palabra correspondiente").\n';
     } else {
       prompt += '\nOpciones:\n' + q.opts.map((o, i) => String.fromCharCode(65 + i) + '. ' + o).join('\n') + '\n';
       prompt += '\nImportante: Devuelve el texto completo de la opción correcta, no solo la letra.\n';

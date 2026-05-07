@@ -49,7 +49,7 @@ export default async function handler(req, res) {
                     "1. No des explicaciones, solo proporciona la respuesta correcta.\n" +
                     "2. Si es opción múltiple (True/False, A/B/C...), devuelve SIEMPRE la letra y el texto completo de la opción (ej. 'A. True' o 'B. False').\n" +
                     "3. Si la pregunta tiene múltiples espacios para llenar (ej. una conversación numerada), devuelve CADA respuesta enumerada en una línea nueva (ej.\n1. respuesta uno\n2. respuesta dos).\n" +
-                    "4. Si es un ejercicio de emparejar (Matching), devuelve la lista completa de emparejamientos, uno por línea (ej.\nA - palabra1\nB - palabra2).";
+                    "4. Si es un ejercicio de emparejar (Matching), no uses letras, devuelve la FRASE COMPLETA emparejada con su PALABRA, una por línea (ej.\nLa frase de la definición -> palabra1).";
         
         let parts = [{ text: prompt }];
         
