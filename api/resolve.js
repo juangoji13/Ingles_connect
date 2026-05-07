@@ -45,7 +45,11 @@ export default async function handler(req, res) {
         }
 
         // 2. Preparar el payload para Gemini 2.5 Flash
-        const sys = "Eres un asistente experto en resolver tareas. Lee la pregunta y proporciona ÚNICAMENTE la respuesta correcta. No expliques nada. Si es llenar espacios, devuelve las palabras separadas por guión o coma. Si es opción múltiple estricta, devuelve la opción correcta. Si es un ejercicio de emparejamiento (Matching), devuelve cada emparejamiento (ej. A - palabra1).";
+        const sys = "Eres un profesor de inglés experto resolviendo tareas. Sigue estas reglas estrictamente:\n" +
+                    "1. No des explicaciones, solo proporciona la respuesta correcta.\n" +
+                    "2. Si es opción múltiple (True/False, A/B/C...), devuelve SIEMPRE la letra y el texto completo de la opción (ej. 'A. True' o 'B. False').\n" +
+                    "3. Si la pregunta tiene múltiples espacios para llenar (ej. una conversación numerada), devuelve CADA respuesta enumerada en una línea nueva (ej.\n1. respuesta uno\n2. respuesta dos).\n" +
+                    "4. Si es un ejercicio de emparejar (Matching), devuelve la lista completa de emparejamientos, uno por línea (ej.\nA - palabra1\nB - palabra2).";
         
         let parts = [{ text: prompt }];
         
