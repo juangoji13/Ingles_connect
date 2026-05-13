@@ -3,10 +3,13 @@ import { createClient } from '@supabase/supabase-js';
 // Inicializar cliente Supabase usando variables de entorno
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
-const geminiApiKey = process.env.GEMINI_API_KEY;
+
+// Soporte para múltiples API Keys de Gemini (separadas por coma) para evadir el límite gratuito
+const rawGeminiKey = process.env.GEMINI_API_KEY || "";
+const geminiApiKeys = rawGeminiKey.split(',').map(k => k.trim()).filter(k => k.length > 0);
 
 // Asegurarse de que las variables estén configuradas
-if (!supabaseUrl || !supabaseKey || !geminiApiKey) {
+if (!supabaseUrl || !supabaseKey || geminiApiKeys.length === 0) {
     console.error("Faltan variables de entorno");
 }
 
@@ -23,6 +26,13 @@ export default async function handler(req, res) {
     if (!licenseKey) {
         return res.status(400).json({ error: 'Licencia requerida' });
     }
+
+    if (geminiApiKeys.length === 0) {
+        return res.status(500).json({ error: 'Falta la configuración de las llaves de Gemini (API Keys)' });
+    }
+
+    // Seleccionar una llave de Gemini al azar para balancear la carga y evitar el límite 429
+    const geminiApiKey = geminiApiKeys[Math.floor(Math.random() * geminiApiKeys.length)];
 
     if (!supabase) {
         return res.status(500).json({ error: 'El servidor no tiene configurada la base de datos' });
@@ -51,9 +61,11 @@ export default async function handler(req, res) {
                     "3. Si la pregunta tiene múltiples espacios para llenar (ej. una conversación numerada), devuelve CADA respuesta enumerada en una línea nueva (ej.\n1. respuesta uno\n2. respuesta dos).\n" +
                     "4. Si es un ejercicio de emparejar (Matching), no uses letras, devuelve la FRASE COMPLETA emparejada con su PALABRA, una por línea (ej.\nLa frase de la definición -> palabra1).";
         
-        let parts = [{ text: prompt }];
-        
-        if (imagesBase64 && imagesBase64.length) {
+        let answer = "";
+
+        if (imagesBase64 && imagesBase64.length > 0) {
+            // LÓGICA DE GEMINI (SI HAY IMÁGENES)
+            let parts = [{ text: prompt }];
             imagesBase64.forEach(b64 => {
                 const mime = b64.substring(b64.indexOf(':') + 1, b64.indexOf(';'));
                 const base64Data = b64.substring(b64.indexOf(',') + 1);
@@ -61,55 +73,87 @@ export default async function handler(req, res) {
                     inline_data: { mime_type: mime, data: base64Data }
                 });
             });
-        }
 
-        const geminiBody = {
-            contents: [{ parts: parts }],
-            systemInstruction: { parts: [{ text: sys }] },
-            generationConfig: { temperature: 0.1 }
-        };
+            const geminiBody = {
+                contents: [{ parts: parts }],
+                systemInstruction: { parts: [{ text: sys }] },
+                generationConfig: { temperature: 0.1 }
+            };
 
-        // 3. Llamar a la API de Gemini con mecanismo de fallback
-        let model = 'gemini-2.5-flash';
-        let geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(geminiBody)
-        });
-
-        // Si el modelo principal falla por alta demanda (503) o límite de cuota (429), intentar con la versión Lite
-        if (!geminiRes.ok && (geminiRes.status === 503 || geminiRes.status === 429)) {
-            console.log(`Modelo ${model} no disponible (${geminiRes.status}). Intentando con gemini-2.5-flash-lite...`);
-            model = 'gemini-2.5-flash-lite';
-            geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`, {
+            let model = 'gemini-2.5-flash';
+            let geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(geminiBody)
             });
-        }
 
-        if (!geminiRes.ok) {
-            const errTxt = await geminiRes.text();
-            console.error(`Gemini Error (${geminiRes.status}):`, errTxt);
+            if (!geminiRes.ok && (geminiRes.status === 503 || geminiRes.status === 429)) {
+                console.log(`Modelo ${model} no disponible (${geminiRes.status}). Intentando con gemini-2.5-flash-lite...`);
+                model = 'gemini-2.5-flash-lite';
+                geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(geminiBody)
+                });
+            }
+
+            if (!geminiRes.ok) {
+                const errTxt = await geminiRes.text();
+                console.error(`Gemini Error (${geminiRes.status}):`, errTxt);
+                let errorMsg = `Error Gemini (${geminiRes.status}): ${errTxt}`;
+                if (geminiRes.status === 400 && errTxt.includes('API key not valid')) {
+                    errorMsg = 'La clave API de Gemini configurada en el servidor no es válida.';
+                } else if (geminiRes.status === 404) {
+                    errorMsg = `El modelo ${model} no fue encontrado o la URL es incorrecta en v1beta.`;
+                }
+                return res.status(500).json({ error: errorMsg });
+            }
+
+            const data = await geminiRes.json();
+            if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+                console.error("Respuesta inválida de Gemini:", JSON.stringify(data));
+                return res.status(500).json({ error: 'Respuesta inválida de la IA' });
+            }
+
+            answer = data.candidates[0].content.parts[0].text.trim();
+        } else {
+            // LÓGICA DE GROQ (SOLO TEXTO)
+            const groqApiKey = process.env.GROQ_API_KEY;
             
-            // Pasar el error exacto al frontend para que el usuario pueda verlo
-            let errorMsg = `Error Gemini (${geminiRes.status}): ${errTxt}`;
-            if (geminiRes.status === 400 && errTxt.includes('API key not valid')) {
-                errorMsg = 'La clave API de Gemini configurada en el servidor no es válida.';
-            } else if (geminiRes.status === 404) {
-                errorMsg = `El modelo ${model} no fue encontrado o la URL es incorrecta en v1beta.`;
+            if (!groqApiKey) {
+                return res.status(500).json({ error: 'Falta la configuración de la llave de Groq (GROQ_API_KEY) en Vercel.' });
             }
             
-            return res.status(500).json({ error: errorMsg });
-        }
+            const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${groqApiKey}`
+                },
+                body: JSON.stringify({
+                    model: "llama-3.3-70b-versatile",
+                    temperature: 0.1,
+                    messages: [
+                        { role: "system", content: sys },
+                        { role: "user", content: prompt }
+                    ]
+                })
+            });
 
-        const data = await geminiRes.json();
-        if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
-            console.error("Respuesta inválida de Gemini:", JSON.stringify(data));
-            return res.status(500).json({ error: 'Respuesta inválida de la IA' });
-        }
+            if (!groqRes.ok) {
+                const errTxt = await groqRes.text();
+                console.error(`Groq Error (${groqRes.status}):`, errTxt);
+                return res.status(500).json({ error: `Error Groq (${groqRes.status}): ${errTxt}` });
+            }
 
-        const answer = data.candidates[0].content.parts[0].text.trim();
+            const data = await groqRes.json();
+            if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+                console.error("Respuesta inválida de Groq:", JSON.stringify(data));
+                return res.status(500).json({ error: 'Respuesta inválida de la IA (Groq)' });
+            }
+            
+            answer = data.choices[0].message.content.trim();
+        }
 
         // 4. Actualizar el contador en Supabase
         const { error: updateError } = await supabase
