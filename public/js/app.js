@@ -152,6 +152,7 @@ export function parseHTML(raw) {
   }
 
   qText = qText.replace(/\(\d+\)\s*\(Click to select\)/g, '').trim();
+  const hasInput = !!container.querySelector('input[type="text"],.answer--input__input');
   const isRanking = !!doc.querySelector('.ranking, .answers-wrap.ranking') || /rank|order/i.test(instr);
   const type = isRanking ? 'ranking' : (hasInput ? 'fill' : (opts.length > 0 ? 'mc' : 'text'));
   const hasImages = !!workContainer.querySelector('img');
