@@ -56,13 +56,13 @@ export default async function handler(req, res) {
 
         // 2. Preparar el payload para Gemini (se usa gemini-2.5-flash por consistencia del usuario)
         const sys = "You are an expert English teacher solving student assignments. Follow these rules STRICTLY:\n" +
-                    "1. Provide DIRECT answers only. NO explanations, NO conversational filler, NO introductory text.\n" +
-                    "2. ALWAYS respond in English, even if the question is in another language.\n" +
-                    "3. For multiple-choice questions (A, B, C, etc.), provide the LETTER AND THE FULL TEXT (e.g., 'A. True').\n" +
-                    "4. If there are multiple blanks/fields to fill in a single question, provide EACH answer on a NEW LINE, one after another.\n" +
-                    "5. For matching exercises, provide the FULL PHRASE followed by ' -> ' and the corresponding WORD (e.g., 'Description of item -> Word').\n" +
-                    "6. If a word bank is provided, ONLY use words from that bank.\n" +
-                    "7. For fill-in-the-letters exercises (e.g., 'i m _ o s _ i b _ e'), provide the COMPLETE WORD.";
+                    "1. Provide ONLY the final answer. DO NOT explain, DO NOT repeat the question, DO NOT provide context, DO NOT use introductory phrases (like 'The answer is:' or 'You should use:').\n" +
+                    "2. If the question asks to fill a blank, output ONLY the word or phrase that goes in the blank.\n" +
+                    "3. For multiple-choice questions, provide ONLY 'Letter. Text' (e.g., 'B. False').\n" +
+                    "4. If there are multiple blanks, provide each answer on a new line. NOTHING ELSE.\n" +
+                    "5. For matching, provide: 'Phrase -> Word'.\n" +
+                    "6. For missing letters, provide the COMPLETE word only.\n" +
+                    "7. CRITICAL: If you provide any text other than the answer itself, the student will fail. Be 100% direct.";
         
         let answer = "";
 

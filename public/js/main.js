@@ -71,10 +71,10 @@ document.addEventListener('paste', e => {
 // ===== RESOLVER =====
 function buildPrompt(idx) {
   const q = questions[idx];
-  let prompt = 'Solve this English assignment question. Follow these rules strictly:\n';
-  prompt += '1. Provide DIRECT answers only. No conversational filler.\n';
-  prompt += '2. If there is a "Word Bank", ONLY use words from it.\n';
-  prompt += '3. If there are multiple blanks (indicated by ______), provide each answer on a new line.\n\n';
+  let prompt = 'Solve this English assignment question. Rules:\n';
+  prompt += '- ONLY output the answer string.\n';
+  prompt += '- NO explanations or introductory text.\n';
+  prompt += '- One answer per line if multiple blanks.\n\n';
   
   const isMatching = q.words.length > 0 && q.opts.length > 0;
 
