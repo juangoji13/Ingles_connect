@@ -86,6 +86,9 @@ function buildPrompt(idx) {
     if (isMatching) {
       prompt += '\nMATCHING DEFINITIONS:\n' + q.opts.map((o, i) => String.fromCharCode(65 + i) + '. ' + o).join('\n') + '\n';
       prompt += '\nFormat: Complete definition phrase -> matching word from bank.\n';
+    } else if (q.type === 'ranking') {
+      prompt += '\nWORDS TO RANK:\n' + q.opts.join('\n') + '\n';
+      prompt += '\nFormat: Return only the full sentence in the correct order.\n';
     } else {
       prompt += '\nOPTIONS:\n' + q.opts.map((o, i) => String.fromCharCode(65 + i) + '. ' + o).join('\n') + '\n';
       prompt += '\nFormat: Letter. Full text of the option.\n';

@@ -77,12 +77,26 @@ export function parseHTML(raw) {
     const lbl = r.closest('label') || r.nextElementSibling;
     if (lbl) { const v = lbl.textContent.trim(); if (v && opts.indexOf(v) === -1) opts.push(v); }
   });
+  
+  // Extract matching/ranking options from .answer--matching__option
+  doc.querySelectorAll('.answer--matching__option, .option-container').forEach(o => {
+    const clone = o.cloneNode(true);
+    // Remove hidden labels that contain "open choices for ranking" etc.
+    clone.querySelectorAll('.t-hidden, .sr-only, .visually-hidden').forEach(h => h.remove());
+    const txt = clone.textContent.trim();
+    // Also check if the parent has a label we should ignore
+    if (txt && txt.length > 0 && !/No answer|^\d+$/.test(txt) && opts.indexOf(txt) === -1) {
+      opts.push(txt);
+    }
+  });
+
+  // Extract from dropdowns if they look like actual words (not just 1, 2, 3)
   if (!opts.length) {
-    doc.querySelectorAll('.answer--matching__option, .answers-wrap label, .answers-wrap li:not(.answer--matching-wrap)').forEach(l => {
-      const clone = l.cloneNode(true);
-      clone.querySelectorAll('select, .visually-hidden, .t-hidden, .sr-only').forEach(e => e.remove());
-      const t = clone.textContent.replace(/\s+/g, ' ').trim();
-      if (t && t.length < 300 && !/Fill in the blank/i.test(t) && opts.indexOf(t) === -1) opts.push(t);
+    doc.querySelectorAll('select option').forEach(o => {
+      const txt = o.textContent.trim();
+      if (txt && txt.length > 1 && !/select|No answer|^\d+$/i.test(txt) && opts.indexOf(txt) === -1) {
+        opts.push(txt);
+      }
     });
   }
 
@@ -138,8 +152,8 @@ export function parseHTML(raw) {
   }
 
   qText = qText.replace(/\(\d+\)\s*\(Click to select\)/g, '').trim();
-  const hasInput = !!container.querySelector('input[type="text"],.answer--input__input');
-  const type = hasInput ? 'fill' : (opts.length > 0 ? 'mc' : 'text');
+  const isRanking = !!doc.querySelector('.ranking, .answers-wrap.ranking') || /rank|order/i.test(instr);
+  const type = isRanking ? 'ranking' : (hasInput ? 'fill' : (opts.length > 0 ? 'mc' : 'text'));
   const hasImages = !!workContainer.querySelector('img');
 
   return { item, part, pts, words, instr, qText, opts, type, hasImages, imagesBase64: [] };
