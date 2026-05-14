@@ -71,21 +71,24 @@ document.addEventListener('paste', e => {
 // ===== RESOLVER =====
 function buildPrompt(idx) {
   const q = questions[idx];
-  let prompt = 'Resuelve esta pregunta:\n\n';
+  let prompt = 'Solve this English assignment question. Follow these rules strictly:\n';
+  prompt += '1. Provide DIRECT answers only. No conversational filler.\n';
+  prompt += '2. If there is a "Word Bank", ONLY use words from it.\n';
+  prompt += '3. If there are multiple blanks (indicated by ______), provide each answer on a new line.\n\n';
   
   const isMatching = q.words.length > 0 && q.opts.length > 0;
 
-  if (q.words.length) prompt += 'Bancos de palabras disponibles: ' + q.words.join(', ') + '\n\n';
-  if (q.instr) prompt += 'Instrucción: ' + q.instr + '\n';
-  prompt += 'Pregunta: ' + q.qText + '\n';
+  if (q.words.length) prompt += 'WORD BANK: ' + q.words.join(', ') + '\n\n';
+  if (q.instr) prompt += 'INSTRUCTIONS: ' + q.instr + '\n';
+  prompt += 'QUESTION: ' + q.qText + '\n';
   
   if (q.opts.length) {
     if (isMatching) {
-      prompt += '\nDefiniciones para emparejar:\n' + q.opts.map((o, i) => String.fromCharCode(65 + i) + '. ' + o).join('\n') + '\n';
-      prompt += '\nImportante: Esto es un ejercicio de emparejamiento. NO devuelvas letras solas ni "Letra - palabra". Devuelve el texto COMPLETO de cada definición emparejado con su palabra correcta del banco (ej. "Texto de la definición -> palabra correspondiente").\n';
+      prompt += '\nMATCHING DEFINITIONS:\n' + q.opts.map((o, i) => String.fromCharCode(65 + i) + '. ' + o).join('\n') + '\n';
+      prompt += '\nFormat: Complete definition phrase -> matching word from bank.\n';
     } else {
-      prompt += '\nOpciones:\n' + q.opts.map((o, i) => String.fromCharCode(65 + i) + '. ' + o).join('\n') + '\n';
-      prompt += '\nImportante: Devuelve el texto completo de la opción correcta, no solo la letra.\n';
+      prompt += '\nOPTIONS:\n' + q.opts.map((o, i) => String.fromCharCode(65 + i) + '. ' + o).join('\n') + '\n';
+      prompt += '\nFormat: Letter. Full text of the option.\n';
     }
   }
   return prompt;
