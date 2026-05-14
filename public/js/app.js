@@ -31,13 +31,12 @@ export function parseHTML(raw) {
   if (ptEl) pts = (ptEl.childNodes[0] && ptEl.childNodes[0].textContent || '').trim();
 
   const words = [];
-  // Look for words in ALL tables and lists within the main content areas
-  const potentialContainers = doc.querySelectorAll('.note--required-info, .note__main, .question--matching__choices, .question-wrap, main, [id^="ember"]');
-  potentialContainers.forEach(container => {
-    // Find all table cells
+  // 1. Look for words in specific word bank containers (Most reliable)
+  const bankContainers = doc.querySelectorAll('.note--required-info, .note__main, .question--matching__choices');
+  bankContainers.forEach(container => {
+    // Find all table cells, matching choices, and list items
     container.querySelectorAll('td, .question--matching__choice, li').forEach(cell => {
       const w = cell.textContent.trim();
-      // Filter out common UI text or long sentences
       if (w && w.length > 0 && w.length < 60 && 
           !/Required information|Skip to question|Check my work|Item \d+/i.test(w) && 
           words.indexOf(w) === -1) {
@@ -45,13 +44,14 @@ export function parseHTML(raw) {
       }
     });
 
-    // Also look for words separated by commas or slashes in paragraphs within these containers
+    // Only split paragraphs if they are in a word bank container
     container.querySelectorAll('p').forEach(p => {
       const tx = p.textContent.trim();
-      if (tx.indexOf('/') > -1 || tx.indexOf(',') > -1) {
+      // Only process if it looks like a list (has separators) and is not just instructions
+      if ((tx.indexOf('/') > -1 || tx.indexOf(',') > -1) && tx.length < 200) {
         tx.split(/[\/\n,]/).map(s => s.trim()).filter(Boolean).forEach(w => {
           if (w && w.length > 0 && w.length < 50 && 
-              !/Required information|Skip to question|Workbook|Unit/i.test(w) && 
+              !/Required information|Skip to question|Workbook|Unit|Select|Complete/i.test(w) && 
               words.indexOf(w) === -1) {
             words.push(w);
           }
@@ -60,11 +60,15 @@ export function parseHTML(raw) {
     });
   });
 
-  // Global search for any table if still empty (fallback)
+  // 2. Global fallback for any table in the question area (often used for word banks)
   if (words.length === 0) {
-    doc.querySelectorAll('table td').forEach(td => {
+    doc.querySelectorAll('.question-wrap table td, .worksheet__main table td').forEach(td => {
       const w = td.textContent.trim();
-      if (w && w.length > 0 && w.length < 50 && words.indexOf(w) === -1) words.push(w);
+      if (w && w.length > 0 && w.length < 50 && 
+          !/Required information|Skip to question|Check my work/i.test(w) && 
+          words.indexOf(w) === -1) {
+        words.push(w);
+      }
     });
   }
 
