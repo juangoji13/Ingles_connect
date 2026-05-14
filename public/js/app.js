@@ -31,24 +31,42 @@ export function parseHTML(raw) {
   if (ptEl) pts = (ptEl.childNodes[0] && ptEl.childNodes[0].textContent || '').trim();
 
   const words = [];
-  doc.querySelectorAll('.note__main, .question--matching__choices, .note--required-info, [id^="ember"] .note--required-info').forEach(reqEl => {
-    reqEl.querySelectorAll('td, .question--matching__choice').forEach(c => {
-      const w = c.textContent.trim();
-      if (w && words.indexOf(w) === -1) words.push(w);
+  // Look for words in ALL tables and lists within the main content areas
+  const potentialContainers = doc.querySelectorAll('.note--required-info, .note__main, .question--matching__choices, .question-wrap, main, [id^="ember"]');
+  potentialContainers.forEach(container => {
+    // Find all table cells
+    container.querySelectorAll('td, .question--matching__choice, li').forEach(cell => {
+      const w = cell.textContent.trim();
+      // Filter out common UI text or long sentences
+      if (w && w.length > 0 && w.length < 60 && 
+          !/Required information|Skip to question|Check my work|Item \d+/i.test(w) && 
+          words.indexOf(w) === -1) {
+        words.push(w);
+      }
     });
-    if (!reqEl.querySelector('table') && !reqEl.classList.contains('question--matching__choices')) {
-      let tx = reqEl.textContent.trim()
-        .replace(/Enter a number to rank.*?sentence\./i, '')
-        .replace(/Type.*?noun\./i, '')
-        .replace(/Select.*?\./i, '').trim();
-      const isList = tx.indexOf('/') > -1 || tx.indexOf(',') > -1 || tx.split('\n').length > 1 || reqEl.querySelector('table');
-      if (tx && isList) {
+
+    // Also look for words separated by commas or slashes in paragraphs within these containers
+    container.querySelectorAll('p').forEach(p => {
+      const tx = p.textContent.trim();
+      if (tx.indexOf('/') > -1 || tx.indexOf(',') > -1) {
         tx.split(/[\/\n,]/).map(s => s.trim()).filter(Boolean).forEach(w => {
-          if (w && w.length < 50 && words.indexOf(w) === -1 && !/Required information|Skip to question/i.test(w)) words.push(w);
+          if (w && w.length > 0 && w.length < 50 && 
+              !/Required information|Skip to question|Workbook|Unit/i.test(w) && 
+              words.indexOf(w) === -1) {
+            words.push(w);
+          }
         });
       }
-    }
+    });
   });
+
+  // Global search for any table if still empty (fallback)
+  if (words.length === 0) {
+    doc.querySelectorAll('table td').forEach(td => {
+      const w = td.textContent.trim();
+      if (w && w.length > 0 && w.length < 50 && words.indexOf(w) === -1) words.push(w);
+    });
+  }
 
   const opts = [];
   doc.querySelectorAll('input[type="radio"]').forEach(r => {
