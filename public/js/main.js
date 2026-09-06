@@ -1,4 +1,4 @@
-import { toast, esc, parseHTML, renderList, buildTxt, buildMd } from './app.js';
+import { toast, esc, parseHTML, renderList, renderRawHtml, buildRawHtmlTxt, buildTxt, buildMd } from './app.js';
 
 // ===== TEMA =====
 (function() {
@@ -144,16 +144,19 @@ document.getElementById('resolve-all-btn').addEventListener('click', async funct
 });
 
 // ===== PREGUNTAS =====
-window.delQ = function(idx) { questions.splice(idx, 1); renderList(questions); toast('Pregunta eliminada'); };
+window.delQ = function(idx) { questions.splice(idx, 1); renderList(questions); renderRawHtml(questions); toast('Pregunta eliminada'); };
 
 document.getElementById('add-btn').addEventListener('click', () => {
-  const raw = document.getElementById('hi').value.trim();
+  const rawInput = document.getElementById('hi').value;
+  const raw = rawInput.trim();
   if (!raw) return toast('Pega el HTML primero', true);
   const q = parseHTML(raw);
   if (!q.qText && !q.opts.length && !q.words.length && !q.item) return toast('No se detectó contenido válido', true);
   q.answer = '';
+  q.rawHtml = rawInput;
   questions.push(q);
   renderList(questions);
+  renderRawHtml(questions);
   document.getElementById('hi').value = '';
   toast('Pregunta ' + questions.length + ' agregada');
 });
@@ -164,10 +167,24 @@ document.getElementById('hi').addEventListener('keydown', e => {
 
 document.getElementById('clr-all-btn').addEventListener('click', () => {
   if (!questions.length) return toast('No hay preguntas');
-  if (confirm('¿Eliminar todas las preguntas?')) { questions = []; renderList(questions); toast('Lista limpiada'); }
+  if (confirm('¿Eliminar todas las preguntas?')) {
+    questions = [];
+    renderList(questions);
+    renderRawHtml(questions);
+    toast('Lista limpiada');
+  }
 });
 
 // ===== EXPORTAR =====
+document.getElementById('raw-html-export-btn').addEventListener('click', () => {
+  if (!questions.length) return toast('No hay HTML guardado', true);
+  const name = (document.getElementById('fn-inp').value.trim() || 'assignment')
+    .replace(/[^a-zA-Z0-9_\-\s]/g, '')
+    .replace(/\s+/g, '-');
+  dl(buildRawHtmlTxt(questions), name + '-html-original.txt', 'text/plain;charset=utf-8');
+  toast('HTML original descargado');
+});
+
 document.getElementById('fmt-tabs').addEventListener('click', e => {
   const tab = e.target.closest('.fmt-tab');
   if (!tab) return;
