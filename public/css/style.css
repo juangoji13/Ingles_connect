@@ -99,6 +99,14 @@ button { cursor: pointer; border: none; font-family: inherit; transition: all 12
 .fmt-tab.active { background: var(--pr); color: #fff }
 .fmt-tab:hover:not(.active) { background: var(--s2); color: var(--text) }
 
+/* --- Raw HTML collection --- */
+.raw-html-section { margin: 18px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden }
+.raw-html-header { padding: 12px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px }
+.raw-html-help { margin-top: 5px; font-size: 11px; color: var(--mu) }
+.raw-html-preview { display: block; width: 100%; min-height: 190px; padding: 12px 14px; resize: vertical; border: none; outline: none; background: var(--bg); color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.55 }
+.raw-html-preview::placeholder { color: var(--fa) }
+.raw-html-export-btn:disabled { opacity: .45; cursor: not-allowed }
+
 /* --- Modals --- */
 .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.65); z-index: 50; display: flex; align-items: center; justify-content: center; padding: 20px; opacity: 0; pointer-events: none; transition: opacity 180ms }
 .modal-bg.open { opacity: 1; pointer-events: all }
@@ -138,4 +146,6 @@ button { cursor: pointer; border: none; font-family: inherit; transition: all 12
   .workspace { grid-template-columns: 1fr; grid-template-rows: auto 1fr }
   .panel { border-right: none; border-bottom: 1px solid var(--border) }
   .workspace .panel:first-child { max-height: 45vh }
+  .raw-html-section { margin: 12px }
+  .raw-html-header { align-items: flex-start; flex-direction: column }
 }

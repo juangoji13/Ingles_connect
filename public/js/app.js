@@ -235,6 +235,31 @@ export function renderList(questions) {
 }
 
 // ===== EXPORTADORES =====
+export function buildRawHtmlTxt(questions) {
+  if (!questions.length) return '';
+  const fname = document.getElementById('fn-inp').value.trim() || 'assignment';
+  const sections = [
+    '=== ' + fname.toUpperCase() + ' - HTML ORIGINAL - ' + questions.length + ' PREGUNTA' + (questions.length > 1 ? 'S' : '') + ' ===',
+    ''
+  ];
+
+  questions.forEach((q, i) => {
+    sections.push('<!-- QUESTION ' + (i + 1) + ' -->');
+    sections.push(q.rawHtml || '');
+    sections.push('', '============================================================', '');
+  });
+
+  return sections.join('\n');
+}
+
+export function renderRawHtml(questions) {
+  const preview = document.getElementById('raw-html-preview');
+  const exportButton = document.getElementById('raw-html-export-btn');
+  if (!preview || !exportButton) return;
+  preview.value = buildRawHtmlTxt(questions);
+  exportButton.disabled = !questions.length;
+}
+
 export function buildTxt(questions) {
   if (!questions.length) return '';
   const fname = document.getElementById('fn-inp').value.trim() || 'assignment';
